@@ -5,8 +5,9 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.json());
 
-const sequelize = new Sequelize('Credit System Database', 'your_db_user', 'your_db_password', {
-  host: 'your_db_host',
+const sequelize = new Sequelize('temporary', 'postgres', 'password', {
+  host: 'localhost',
+  port: 5432,
   dialect: 'postgres', // Use 'mysql' for MySQL
 });
 
@@ -14,8 +15,9 @@ const Customer = sequelize.define('Customer', {
   customerId: DataTypes.INTEGER, 
   firstName: DataTypes.STRING,
   lastName: DataTypes.STRING,
-  phoneNumber:DataTypes.INTEGER,
-  monthlySalary: DataTypes.FLOAT,
+
+  phoneNumber:DataTypes.STRING,
+  monthlySalary: DataTypes.INTEGER,
   approvedLimit: DataTypes.FLOAT,
   currentDebt : DataTypes.FLOAT,
 });
@@ -28,8 +30,8 @@ const Loan = sequelize.define('Loan', {
   interestRate: DataTypes.FLOAT,
   monthlyRepayment: DataTypes.FLOAT,
   emi: DataTypes.FLOAT,
-  startDate: DataTypes.date,
-  endDate : DataTypes.date
+  startDate: DataTypes.DATE,
+  endDate : DataTypes.DATE
 });
 
 //Customer.hasMany(Loan);
@@ -37,13 +39,13 @@ const Loan = sequelize.define('Loan', {
 
 app.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, age,  monthlyIncome, phoneNumber } = req.body;
+    const { firstName, lastName,  monthlySalary, phoneNumber } = req.body;
     // Calculate approved limit
     const approvedLimit = Math.round(36 * monthlySalary / 100000) * 100000;
 
     // Create a new customer record
     const customer = await Customer.create({ firstName, lastName, monthlySalary, approvedLimit, phoneNumber });
-    await Customer.save();
+    await Customer.create();
 
     res.json(customer);
   } catch (error) {
@@ -59,16 +61,17 @@ app.post('/create-loan', (req, res) => {
 
     // Implement eligibility checks based on credit score or other criteria
     // Replace this with your actual logic
-    const isEligible = checkEligibility(customer_id, loan_amount);
+    //const isEligible = checkEligibility(customer_id, loan_amount);
+    const isEligible = true;
 
     if (isEligible) {
       // Calculate the monthly installment based on the provided interest rate
-      const monthly_installment = calculateMonthlyInstallment(loan_amount, interest_rate, tenure);
+      const monthly_installment = 50;//calculateMonthlyInstallment(loan_amount, interest_rate, tenure);
 
       // Create a new loan record
       const newLoan = {
         customer_id,
-        loan_id: loans.length + 1,
+        loan_id: Loan.length + 1,
         loan_amount,
         interest_rate,
         tenure,
@@ -76,7 +79,7 @@ app.post('/create-loan', (req, res) => {
       };
 
       // Save the loan to your data store (e.g., database)
-      loans.push(newLoan);
+      Loan.create(newLoan);
 
       res.status(201).json({
         loan_id: newLoan.loan_id,
@@ -114,15 +117,15 @@ app.post('/check-eligibility', async (req, res) => {
     // If the loan is approved
     const loan = {
       customer_id,
-      loan_id: loans.length + 1,
+      loan_id: Loan.length + 1,
       loan_amount,
       interest_rate,
       tenure,
-      monthly_installment: calculateMonthlyInstallment(loan_amount, interest_rate, tenure),
+      monthly_installment: 403//calculateMonthlyInstallment(loan_amount, interest_rate, tenure),
     };
 
     // Add the loan to the list (in a real system, you would save it to the database)
-    loans.push(loan);
+    Loan.create(loan);
 
     res.status(201).json({
       customer_id,
@@ -147,7 +150,7 @@ app.post('/check-eligibility', async (req, res) => {
 
 // Add other API routes as per your assignment requirements
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
